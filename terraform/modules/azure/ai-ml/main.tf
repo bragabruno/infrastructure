@@ -5,7 +5,8 @@ resource "azurerm_cognitive_account" "openai" {
   kind                = "OpenAI"
   sku_name            = var.openai_sku
 
-  custom_subdomain_name = "${var.project_name}-${var.environment}"
+  custom_subdomain_name     = "${var.project_name}-${var.environment}"
+  public_network_access_enabled = false
 
   tags = {
     project     = var.project_name
@@ -37,7 +38,8 @@ resource "azurerm_key_vault" "main" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
-  enable_rbac_authorization = true
+  enable_rbac_authorization   = true
+  public_network_access_enabled = false
 
   tags = {
     project     = var.project_name
@@ -100,6 +102,9 @@ resource "azurerm_storage_account" "foundry" {
   location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
+
+  allow_nested_items_to_be_public = false
+  public_network_access_enabled   = false
 
   tags = {
     project     = var.project_name

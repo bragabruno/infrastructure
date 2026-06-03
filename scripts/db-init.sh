@@ -39,6 +39,9 @@ fi
 
 log "Seeding reference data..."
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" <<'SQL'
+-- Enable uuid extension (gen_random_uuid requires pgcrypto in PG13, built-in in PG16+)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Seed merchants (idempotent)
 INSERT INTO merchants (id, name, category, risk_level, country, created_at)
 VALUES
