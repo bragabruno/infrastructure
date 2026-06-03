@@ -53,19 +53,19 @@ module "secrets" {
 module "compute" {
   source = "../../modules/aws/compute"
 
-  environment            = "dev"
-  project_name           = var.project_name
-  vpc_id                 = module.networking.vpc_id
-  public_subnet_ids      = module.networking.public_subnet_ids
-  private_subnet_ids     = module.networking.private_subnet_ids
-  app_security_group_id  = module.networking.app_security_group_id
-  alb_security_group_id  = module.networking.alb_security_group_id
-  min_capacity           = 1
-  max_capacity           = 3
-  rds_endpoint           = module.database.rds_endpoint
-  redis_endpoint         = module.cache.redis_endpoint
-  kafka_brokers          = module.messaging.bootstrap_brokers
-  secrets_manager_arns   = values(module.secrets.secret_arns)
+  environment           = "dev"
+  project_name          = var.project_name
+  vpc_id                = module.networking.vpc_id
+  public_subnet_ids     = module.networking.public_subnet_ids
+  private_subnet_ids    = module.networking.private_subnet_ids
+  app_security_group_id = module.networking.app_security_group_id
+  alb_security_group_id = module.networking.alb_security_group_id
+  min_capacity          = 1
+  max_capacity          = 3
+  rds_endpoint          = module.database.rds_endpoint
+  redis_endpoint        = module.cache.redis_endpoint
+  kafka_brokers         = module.messaging.bootstrap_brokers
+  secrets_manager_arns  = values(module.secrets.secret_arns)
 }
 
 module "firebase_auth" {
