@@ -1,0 +1,10 @@
+project_name               = "fraud-prevention"
+aws_region                 = "us-east-1"
+aws_vpc_cidr               = "10.0.0.0/16"
+aws_azs                    = ["us-east-1a", "us-east-1b"]
+gcp_project_id             = "fraud-prevention-dev"
+azure_region               = "eastus"
+azure_resource_group_name  = "fraud-prevention-dev-rg"
+azure_subscription_id      = "REPLACE_WITH_SUBSCRIPTION_ID"
+google_oauth_client_id     = "REPLACE_WITH_GOOGLE_CLIENT_ID"
+google_oauth_client_secret = "REPLACE_WITH_GOOGLE_CLIENT_SECRET"
