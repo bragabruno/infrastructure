@@ -59,3 +59,15 @@ resource "google_firebase_web_app" "main" {
 
   depends_on = [google_firebase_project.main]
 }
+
+resource "google_apikeys_key" "firebase" {
+  name         = "${var.project_name}-${var.environment}-firebase-key"
+  display_name = "${var.project_name} Firebase API Key"
+  project      = var.gcp_project_id
+
+  restrictions {
+    api_targets {
+      service = "firebase.googleapis.com"
+    }
+  }
+}
