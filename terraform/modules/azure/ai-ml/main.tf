@@ -24,8 +24,8 @@ resource "azurerm_cognitive_deployment" "gpt4" {
     version = var.gpt4_model_version
   }
 
-  sku {
-    name     = "Standard"
+  scale {
+    type     = "Standard"
     capacity = var.gpt4_capacity
   }
 }

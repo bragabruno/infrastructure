@@ -41,9 +41,9 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [var.data_security_group_id]
   parameter_group_name   = aws_db_parameter_group.main.name
 
-  multi_az            = var.multi_az
+  multi_az                = var.multi_az
   backup_retention_period = var.backup_retention
-  storage_encrypted   = true
+  storage_encrypted       = true
 
   allocated_storage     = 20
   max_allocated_storage = 100
