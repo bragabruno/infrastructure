@@ -1,0 +1,212 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Java 21)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build
+        run: ./gradlew build -x test
+
+      - name: Test
+        run: ./gradlew test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/build/reports/tests/
+
+  ml-service:
+    name: ML Service (Python 3.12)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ml-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Lint
+        run: uv run ruff check src/ tests/
+
+      - name: Format check
+        run: uv run ruff format --check src/ tests/
+
+      - name: Typecheck
+        run: uv run mypy src/
+
+      - name: Test
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-service-test-results
+          path: ml-service/htmlcov/
+
+  frontend:
+    name: Frontend (Angular 19)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+
+  integration:
+    name: Integration (Docker Compose)
+    runs-on: ubuntu-latest
+    needs: [backend, ml-service, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build all images
+        run: docker compose build
+
+      - name: Start stack
+        run: docker compose up -d
+
+      - name: Wait for health (120s)
+        run: |
+          for i in $(seq 1 24); do
+            sleep 5
+            if curl -sf http://localhost:8080/actuator/health &>/dev/null && \
+               curl -sf http://localhost:8001/health &>/dev/null && \
+               curl -sf http://localhost:4200 &>/dev/null; then
+              echo "All services healthy"
+              exit 0
+            fi
+            echo "Waiting... ($i/24)"
+          done
+          echo "Services not healthy after 120s"
+          docker compose logs
+          exit 1
+
+      - name: Run integration tests
+        run: |
+          python3 -m pip install requests
+          python3 tests/integration/test_smoke.py
+
+      - name: Collect logs on failure
+        if: failure()
+        run: docker compose logs > integration-logs.txt 2>&1
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-logs
+          path: integration-logs.txt
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v
+
+  contract-validation:
+    name: Contract Validation
+    runs-on: ubuntu-latest
+    needs: [backend, ml-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Validate contracts
+        run: bash scripts/validate-contracts.sh
+
+  status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [backend, ml-service, frontend, integration, contract-validation]
+    if: always()
+
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ needs.backend.result }}" == "failure" || \
+                "${{ needs.ml-service.result }}" == "failure" || \
+                "${{ needs.frontend.result }}" == "failure" || \
+                "${{ needs.integration.result }}" == "failure" || \
+                "${{ needs.contract-validation.result }}" == "failure" ]]; then
+            echo "CI failed"
+            exit 1
+          fi
+          echo "CI passed"
