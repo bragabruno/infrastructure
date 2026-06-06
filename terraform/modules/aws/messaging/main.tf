@@ -22,8 +22,8 @@ resource "aws_msk_cluster" "main" {
   number_of_broker_nodes = var.number_of_broker_nodes
 
   broker_node_group_info {
-    instance_type  = var.instance_type
-    client_subnets = slice(var.private_subnet_ids, 0, var.number_of_broker_nodes)
+    instance_type   = var.instance_type
+    client_subnets  = slice(var.private_subnet_ids, 0, var.number_of_broker_nodes)
     security_groups = [var.messaging_security_group_id]
 
     storage_info {
