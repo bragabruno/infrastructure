@@ -5,7 +5,7 @@ resource "azurerm_cognitive_account" "openai" {
   kind                = "OpenAI"
   sku_name            = var.openai_sku
 
-  custom_subdomain_name     = "${var.project_name}-${var.environment}"
+  custom_subdomain_name         = "${var.project_name}-${var.environment}"
   public_network_access_enabled = false
 
   tags = {
@@ -25,8 +25,8 @@ resource "azurerm_cognitive_deployment" "gpt4" {
     version = var.gpt4_model_version
   }
 
-  sku {
-    name     = "Standard"
+  scale {
+    type     = "Standard"
     capacity = var.gpt4_capacity
   }
 }
@@ -38,7 +38,7 @@ resource "azurerm_key_vault" "main" {
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
-  enable_rbac_authorization   = true
+  enable_rbac_authorization     = true
   public_network_access_enabled = false
 
   tags = {
